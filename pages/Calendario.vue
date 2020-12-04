@@ -1,72 +1,169 @@
 <template>
   <div>
-    <v-sheet tile height="54" class="d-flex">
-      <v-btn icon class="ma-2" @click="$refs.calendar.prev()">
-        <v-icon>mdi-chevron-left</v-icon>
+    <v-row class="fill-height">
+      <v-col>
+        <v-sheet height="64">
+          <v-toolbar flat>
+            <v-btn
+              outlined
+              class="mr-4"
+              color="grey darken-2"
+              @click="setToday"
+            >
+              Today
+            </v-btn>
+            <v-btn fab text small color="grey darken-2" @click="prev">
+              <v-icon small> mdi-chevron-left </v-icon>
+            </v-btn>
+            <v-btn fab text small color="grey darken-2" @click="next">
+              <v-icon small> mdi-chevron-right </v-icon>
+            </v-btn>
+            <v-toolbar-title v-if="$refs.calendar">
+              {{ $refs.calendar.title }}
+            </v-toolbar-title>
+            <v-spacer></v-spacer>
+            <v-menu bottom right>
+              <template v-slot:activator="{ on, attrs }">
+                <v-btn outlined color="grey darken-2" v-bind="attrs" v-on="on">
+                  <span>{{ typeToLabel[type] }}</span>
+                  <v-icon right> mdi-menu-down </v-icon>
+                </v-btn>
+              </template>
+              <v-list>
+                <v-list-item @click="type = 'day'">
+                  <v-list-item-title>Day</v-list-item-title>
+                </v-list-item>
+                <v-list-item @click="type = 'week'">
+                  <v-list-item-title>Week</v-list-item-title>
+                </v-list-item>
+                <v-list-item @click="type = 'month'">
+                  <v-list-item-title>Month</v-list-item-title>
+                </v-list-item>
+                <v-list-item @click="type = '4day'">
+                  <v-list-item-title>4 days</v-list-item-title>
+                </v-list-item>
+              </v-list>
+            </v-menu>
+          </v-toolbar>
+        </v-sheet>
+        <v-sheet height="600">
+          <v-calendar
+            ref="calendar"
+            v-model="focus"
+            color="primary"
+            :events="events"
+            :event-color="getEventColor"
+            :type="type"
+            @click:event="showEvent"
+            @click:more="viewDay"
+            @click:date="viewDay"
+            @change="updateRange"
+          ></v-calendar>
+          <v-menu
+            v-model="selectedOpen"
+            :close-on-content-click="false"
+            :activator="selectedElement"
+            offset-x
+          >
+            <v-card color="grey lighten-4" min-width="350px" flat>
+              <v-toolbar :color="selectedEvent.color" dark>
+                <v-btn icon>
+                  <v-icon>mdi-pencil</v-icon>
+                </v-btn>
+                <v-toolbar-title v-html="selectedEvent.name"></v-toolbar-title>
+                <v-spacer></v-spacer>
+                <v-btn icon>
+                  <v-icon>mdi-heart</v-icon>
+                </v-btn>
+                <v-btn icon>
+                  <v-icon>mdi-dots-vertical</v-icon>
+                </v-btn>
+              </v-toolbar>
+              <v-card-text>
+                <span v-html="selectedEvent.details"></span>
+              </v-card-text>
+              <v-card-actions>
+                <v-btn text color="secondary" @click="selectedOpen = false">
+                  Cancel
+                </v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-menu>
+        </v-sheet>
+      </v-col>
+    </v-row>
+    <v-row justify="center">
+      <v-btn color="primary" dark @click.stop="dialog = true">
+        Agregar Evento
       </v-btn>
-      <v-select
-        v-model="type"
-        :items="types"
-        dense
-        outlined
-        hide-details
-        class="ma-2"
-        label="type"
-      ></v-select>
-      <v-select
-        v-model="mode"
-        :items="modes"
-        dense
-        outlined
-        hide-details
-        label="event-overlap-mode"
-        class="ma-2"
-      ></v-select>
-      <v-select
-        v-model="weekday"
-        :items="weekdays"
-        dense
-        outlined
-        hide-details
-        label="weekdays"
-        class="ma-2"
-      ></v-select>
-      <v-spacer></v-spacer>
-      <v-btn icon class="ma-2" @click="$refs.calendar.next()">
-        <v-icon>mdi-chevron-right</v-icon>
-      </v-btn>
-    </v-sheet>
-    <v-sheet height="600">
-      <v-calendar
-        ref="calendar"
-        v-model="value"
-        :weekdays="weekday"
-        :type="type"
-        :events="events"
-        :event-overlap-mode="mode"
-        :event-overlap-threshold="30"
-        :event-color="getEventColor"
-        @change="getEvents"
-      ></v-calendar>
-    </v-sheet>
+
+      <v-dialog v-model="dialog" max-width="290">
+        <v-card>
+          <v-form>
+            <v-autocomplete
+              v-model="name"
+              :items="names"
+              outlined
+              dense
+              chips
+              small-chips
+              label="Nombres"
+            >
+            </v-autocomplete>
+
+            <v-row justify="space-around" align="center">
+              <v-date-picker v-model="start" flat></v-date-picker>
+
+              <v-date-picker v-model="end" elevation="15"></v-date-picker>
+            </v-row>
+            <!-- <v-text-field v-model="start" label="Start"></v-text-field>
+
+            <v-text-field v-model="end" label="End"></v-text-field> -->
+
+            <v-autocomplete
+              v-model="color"
+              :items="colors"
+              outlined
+              dense
+              chips
+              small-chips
+              label="Color"
+            >
+            </v-autocomplete>
+          </v-form>
+
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn @click="addEvent()">Añadir Evento</v-btn>
+            <v-btn color="green darken-1" text @click="dialog = false">
+              Finish
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+    </v-row>
   </div>
 </template>
 
 <script>
 export default {
   data: () => ({
+    name: "",
+    start: 0,
+    end: 0,
+    color: "",
+    dialog: false,
+    focus: "",
     type: "month",
-    types: ["month", "week", "day", "4day"],
-    mode: "stack",
-    modes: ["stack", "column"],
-    weekday: [0, 1, 2, 3, 4, 5, 6],
-    weekdays: [
-      { text: "Sun - Sat", value: [0, 1, 2, 3, 4, 5, 6] },
-      { text: "Mon - Sun", value: [1, 2, 3, 4, 5, 6, 0] },
-      { text: "Mon - Fri", value: [1, 2, 3, 4, 5] },
-      { text: "Mon, Wed, Fri", value: [1, 3, 5] },
-    ],
-    value: "",
+    typeToLabel: {
+      month: "Month",
+      week: "Week",
+      day: "Day",
+      "4day": "4 Days",
+    },
+    selectedEvent: {},
+    selectedElement: null,
+    selectedOpen: false,
     events: [],
     colors: [
       "blue",
@@ -87,9 +184,48 @@ export default {
       "Conference",
       "Party",
     ],
+    newEvent: {},
   }),
+  mounted() {
+    this.$refs.calendar.checkChange();
+  },
   methods: {
-    getEvents({ start, end }) {
+    viewDay({ date }) {
+      console.log(this.events);
+      this.focus = date;
+      this.type = "day";
+    },
+    getEventColor(event) {
+      return event.color;
+    },
+    setToday() {
+      this.focus = "";
+    },
+    prev() {
+      this.$refs.calendar.prev();
+    },
+    next() {
+      this.$refs.calendar.next();
+    },
+    showEvent({ nativeEvent, event }) {
+      const open = () => {
+        this.selectedEvent = event;
+        this.selectedElement = nativeEvent.target;
+        setTimeout(() => {
+          this.selectedOpen = true;
+        }, 10);
+      };
+
+      if (this.selectedOpen) {
+        this.selectedOpen = false;
+        setTimeout(open, 10);
+      } else {
+        open();
+      }
+
+      nativeEvent.stopPropagation();
+    },
+    updateRange({ start, end }) {
       const events = [];
 
       const min = new Date(`${start.date}T00:00:00`);
@@ -115,14 +251,27 @@ export default {
 
       this.events = events;
     },
-    getEventColor(event) {
-      return event.color;
-    },
     rnd(a, b) {
       return Math.floor((b - a + 1) * Math.random()) + a;
     },
+    addEvent() {
+      this.events.push({
+        color: this.color,
+        end: this.end,
+        name: this.name,
+        start: this.start,
+        timed: false,
+      });
+    },
   },
 };
+
+// :
+// color: "grey darken-1"
+// end: Thu Dec 31 2020 22:00:00 GMT+0000 (hora estándar de Europa occidental)
+// name: "Conference"
+// start: Tue Dec 29 2020 03:30:00 GMT+0000 (hora estándar de Europa occidental)
+// timed: false
 </script>
 
 <style>
